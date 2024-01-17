@@ -21,7 +21,7 @@ const usage =
     // \\  -K, --data          # data chunks in a block
     // \\  -w, --word          # bytes in a word in a chunks
     \\
-    \\  -d, --data          name of data fifo file
+    \\  -f, --file          name of data file
     \\  -c, --code          prefix of code files
 ;
 
@@ -45,7 +45,7 @@ pub fn main() !void {
 const Arg = struct {
     cmd: []const u8,
     code: []const u8,
-    data: []const u8,
+    file: []const u8,
 };
 
 fn parseArgs(args: []const []const u8) Arg {
@@ -59,12 +59,12 @@ fn parseArgs(args: []const []const u8) Arg {
             bloom |= 0b00100;
             continue;
         } else if (bloom & 0b1000 != 0) {
-            parsed.data = arg;
+            parsed.file = arg;
             bloom &= 0b00111;
             bloom |= 0b10000;
             continue;
         }
-        if (std.mem.eql(u8, arg, "-d") or std.mem.eql(u8, arg, "--data")) {
+        if (std.mem.eql(u8, arg, "-d") or std.mem.eql(u8, arg, "--file")) {
             bloom |= 0b01000;
         } else if (std.mem.eql(u8, arg, "-c") or std.mem.eql(u8, arg, "--code")) {
             bloom |= 0b00010;
@@ -99,10 +99,10 @@ fn mainArgs(allocator: std.mem.Allocator, args: []const []const u8) !void {
 
     const cmds = parseArgs(args);
     const code_prefix: []const u8 = cmds.code;
-    const data_filename: []const u8 = cmds.data;
+    const filename: []const u8 = cmds.file;
 
     if (std.mem.eql(u8, cmds.cmd, "encode")) {
-        var data_file = try std.fs.cwd().openFile(data_filename, .{});
+        var data_file = try std.fs.cwd().openFile(filename, .{});
         defer data_file.close();
         var code_files: [n]std.fs.File = undefined;
         var code_writers: [n]std.fs.File.Writer = undefined;
@@ -122,7 +122,7 @@ fn mainArgs(allocator: std.mem.Allocator, args: []const []const u8) !void {
         var excluded_shards = sample(random, n, n - k);
         std.debug.print("excluding {any}\n", .{excluded_shards});
 
-        var data_file = try std.fs.cwd().createFile(data_filename, .{});
+        var data_file = try std.fs.cwd().createFile(filename, .{});
         defer data_file.close();
 
         var code_files: [k]std.fs.File = undefined;
